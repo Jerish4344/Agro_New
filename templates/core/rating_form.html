@@ -1,0 +1,570 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rate Items - {{ store.name }} - Kannammal Agro{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-4 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Date Header -->
+        <div class="bg-gradient-to-r from-green-600 to-green-700 rounded-xl shadow-md p-4 mb-4 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-bold mb-1">
+                        <i class="fas fa-star mr-2"></i>Daily Item Rating
+                    </h1>
+                    <p class="text-green-100 text-sm" id="currentStoreName">{{ store.name }}</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-bold" id="currentDate"></div>
+                    <div class="text-green-100 text-sm">Today's Rating Form</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Store Selector for Store Heads and Admins -->
+        {% if managed_stores %}
+        <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+            <h2 class="text-base font-semibold text-gray-900 mb-3">
+                {% if user.role == 'store_head' %}
+                <i class="fas fa-store text-purple-600 mr-2"></i>Select Store to Rate
+                {% else %}
+                <i class="fas fa-store text-blue-600 mr-2"></i>Select Store to Rate
+                {% endif %}
+            </h2>
+            <div class="w-full md:w-1/2">
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    <i class="fas fa-building mr-2 text-gray-400"></i>Store
+                </label>
+                <select id="storeSelect" 
+                        class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 {% if user.role == 'store_head' %}focus:ring-2 focus:ring-purple-500{% else %}focus:ring-2 focus:ring-blue-500{% endif %} focus:border-transparent transition-all duration-200">
+                    {% for managed_store in managed_stores %}
+                        <option value="{{ managed_store.id }}" {% if managed_store.id == store.id %}selected{% endif %}>
+                            {{ managed_store.name }} ({{ managed_store.code }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Filter Section -->
+        <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+            <h2 class="text-base font-semibold text-gray-900 mb-3">
+                <i class="fas fa-filter text-blue-600 mr-2"></i>Select Category
+            </h2>
+            <div class="w-full md:w-1/2">
+                <!-- Category Dropdown -->
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    <i class="fas fa-list mr-2 text-gray-400"></i>Category
+                </label>
+                <select id="categorySelect" 
+                        class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
+                    <option value="">-- Select Category --</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.icon }} {{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="hidden bg-white rounded-xl shadow-md p-8 text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-green-600"></i>
+            <p class="text-gray-600 mt-4">Loading subcategories...</p>
+        </div>
+
+        <!-- Subcategories Accordion -->
+        <div id="subcategoriesContainer" class="space-y-3 hidden">
+            <!-- Subcategories will be inserted here -->
+        </div>
+
+        <!-- Submit Button Container -->
+        <div id="submitContainer" class="hidden mt-6 flex justify-center">
+            <button id="submitRatingsBtn" 
+                    class="inline-flex items-center px-8 py-3 border border-transparent rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-save mr-2"></i>Save All Ratings
+            </button>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="bg-white rounded-xl shadow-md p-12 text-center">
+            <i class="fas fa-box-open text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-700 mb-2">No Category Selected</h3>
+            <p class="text-gray-500">Please select a category to view subcategories and rate items</p>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div id="messageContainer" class="fixed bottom-6 right-6 z-50"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Display current date
+    const currentDate = document.getElementById('currentDate');
+    const today = new Date();
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    currentDate.textContent = today.toLocaleDateString('en-US', options);
+    
+    const categorySelect = document.getElementById('categorySelect');
+    const subcategoriesContainer = document.getElementById('subcategoriesContainer');
+    const emptyState = document.getElementById('emptyState');
+    const submitBtn = document.getElementById('submitRatingsBtn');
+    const submitContainer = document.getElementById('submitContainer');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const storeSelect = document.getElementById('storeSelect');
+    const currentStoreName = document.getElementById('currentStoreName');
+
+    // Store selector handler for store heads
+    if (storeSelect) {
+        storeSelect.addEventListener('change', function() {
+            const storeId = this.value;
+            const storeName = this.options[this.selectedIndex].text;
+            
+            // Clear current ratings
+            subcategoriesContainer.innerHTML = '';
+            subcategoriesContainer.classList.add('hidden');
+            submitContainer.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            categorySelect.value = '';
+            
+            // Update store selection on server
+            const csrfToken = getCookie('csrftoken');
+            
+            fetch('{% url 'api_select_store' %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ store_id: storeId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentStoreName.textContent = data.store_name;
+                    showMessage(data.message, 'success');
+                } else {
+                    showMessage(data.error || 'Error selecting store', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error selecting store:', error);
+                showMessage('Error selecting store', 'error');
+            });
+        });
+    }
+
+    // Category change handler
+    categorySelect.addEventListener('change', function() {
+        const categoryId = this.value;
+        subcategoriesContainer.innerHTML = '';
+        subcategoriesContainer.classList.add('hidden');
+        submitContainer.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+
+        if (categoryId) {
+            loadingSpinner.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            
+            // Fetch all subcategories for the selected category
+            fetch(`{% url 'api_rating_subcategories' %}?category_id=${categoryId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    loadingSpinner.classList.add('hidden');
+                    
+                    console.log('Subcategories response:', data);
+                    
+                    if (data.success && data.subcategories && data.subcategories.length > 0) {
+                        subcategoriesContainer.classList.remove('hidden');
+                        submitContainer.classList.remove('hidden');
+                        
+                        data.subcategories.forEach(subcategory => {
+                            const card = createSubcategoryCard(subcategory);
+                            subcategoriesContainer.appendChild(card);
+                        });
+                    } else if (data.success === false) {
+                        emptyState.classList.remove('hidden');
+                        showMessage(data.error || 'Error loading subcategories', 'error');
+                    } else {
+                        emptyState.classList.remove('hidden');
+                        const emptyMessage = emptyState.querySelector('p');
+                        emptyMessage.textContent = 'No subcategories found for this category';
+                    }
+                })
+                .catch(error => {
+                    loadingSpinner.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    console.error('Error fetching subcategories:', error);
+                    showMessage('Error loading subcategories: ' + error.message, 'error');
+                });
+        }
+    });
+
+    // Create subcategory card with expand/collapse
+    function createSubcategoryCard(subcategory) {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-lg shadow-md overflow-hidden transition-all duration-200';
+        card.dataset.subcategoryId = subcategory.id;
+        
+        card.innerHTML = `
+            <div class="subcategory-header flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                 onclick="toggleSubcategory(${subcategory.id})">
+                <div class="flex items-center gap-3">
+                    <button class="expand-btn w-8 h-8 flex items-center justify-center rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors">
+                        <i class="fas fa-plus text-sm"></i>
+                    </button>
+                    <h3 class="text-base font-semibold text-gray-900">${subcategory.name}</h3>
+                </div>
+                <span class="item-count text-sm text-gray-500 hidden"></span>
+            </div>
+            <div class="subcategory-content hidden border-t border-gray-200">
+                <div class="loading-items hidden p-6 text-center">
+                    <i class="fas fa-spinner fa-spin text-2xl text-green-600"></i>
+                    <p class="text-gray-600 text-sm mt-2">Loading items...</p>
+                </div>
+                <div class="items-container p-4"></div>
+            </div>
+        `;
+        
+        return card;
+    }
+
+    // Toggle subcategory expand/collapse
+    window.toggleSubcategory = function(subcategoryId) {
+        const card = document.querySelector(`[data-subcategory-id="${subcategoryId}"]`);
+        const content = card.querySelector('.subcategory-content');
+        const expandBtn = card.querySelector('.expand-btn i');
+        const itemsContainer = card.querySelector('.items-container');
+        const loadingItems = card.querySelector('.loading-items');
+        const isExpanded = !content.classList.contains('hidden');
+        
+        if (isExpanded) {
+            // Collapse
+            content.classList.add('hidden');
+            expandBtn.classList.remove('fa-minus');
+            expandBtn.classList.add('fa-plus');
+        } else {
+            // Expand
+            content.classList.remove('hidden');
+            expandBtn.classList.remove('fa-plus');
+            expandBtn.classList.add('fa-minus');
+            
+            // Load items if not already loaded
+            if (itemsContainer.children.length === 0) {
+                loadingItems.classList.remove('hidden');
+                loadItems(subcategoryId, card);
+            }
+        }
+    };
+
+    // Load items for a subcategory
+    function loadItems(subcategoryId, card) {
+        const itemsContainer = card.querySelector('.items-container');
+        const loadingItems = card.querySelector('.loading-items');
+        const itemCount = card.querySelector('.item-count');
+
+        fetch(`{% url 'api_rating_items' %}?subcategory_id=${subcategoryId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                loadingItems.classList.add('hidden');
+                
+                console.log('Items response:', data);
+                
+                if (data.success && data.items && data.items.length > 0) {
+                    itemCount.textContent = `${data.items.length} item${data.items.length > 1 ? 's' : ''}`;
+                    itemCount.classList.remove('hidden');
+                    
+                    data.items.forEach(item => {
+                        const itemRow = createItemRow(item, subcategoryId);
+                        itemsContainer.appendChild(itemRow);
+                    });
+                } else if (data.success === false) {
+                    itemsContainer.innerHTML = `
+                        <div class="text-center py-8 text-red-500">
+                            <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
+                            <p>Error: ${data.error || 'Failed to load items'}</p>
+                        </div>
+                    `;
+                } else {
+                    itemsContainer.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-inbox text-3xl mb-2"></i>
+                            <p>No items found</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                loadingItems.classList.add('hidden');
+                console.error('Error fetching items:', error);
+                itemsContainer.innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
+                        <p>Error loading items: ${error.message}</p>
+                    </div>
+                `;
+                showMessage('Error loading items: ' + error.message, 'error');
+            });
+    }
+
+    // Create item row
+    function createItemRow(item, subcategoryId) {
+        const row = document.createElement('div');
+        row.className = 'py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors';
+        row.dataset.itemId = item.id;
+        row.dataset.subcategoryId = subcategoryId;
+
+        row.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                <div class="md:col-span-3">
+                    <span class="text-sm font-medium text-gray-900">${item.name}</span>
+                </div>
+                <div class="md:col-span-3 flex items-center justify-start md:justify-center space-x-3">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="rating_${item.id}" value="-1" 
+                               ${item.rating === -1 ? 'checked' : ''}
+                               class="w-4 h-4 text-gray-600 focus:ring-gray-500">
+                        <span class="ml-1.5 text-sm font-medium text-gray-700">N/A</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="rating_${item.id}" value="0" 
+                               ${item.rating === 0 ? 'checked' : ''}
+                               class="w-4 h-4 text-red-600 focus:ring-red-500">
+                        <span class="ml-1.5 text-sm font-medium text-gray-700">0</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="rating_${item.id}" value="5" 
+                               ${item.rating === 5 ? 'checked' : ''}
+                               class="w-4 h-4 text-yellow-600 focus:ring-yellow-500">
+                        <span class="ml-1.5 text-sm font-medium text-gray-700">5</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="rating_${item.id}" value="10" 
+                               ${item.rating === 10 ? 'checked' : ''}
+                               class="w-4 h-4 text-green-600 focus:ring-green-500">
+                        <span class="ml-1.5 text-sm font-medium text-gray-700">10</span>
+                    </label>
+                </div>
+                <div class="md:col-span-2 flex items-center justify-center">
+                    <input type="file" 
+                           id="photo_${item.id}" 
+                           name="photo_${item.id}" 
+                           accept="image/*" 
+                           capture="environment"
+                           class="hidden"
+                           onchange="handlePhotoChange(${item.id})">
+                    <label for="photo_${item.id}" 
+                           class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-camera mr-1.5"></i>
+                        <span id="photo_label_${item.id}">Add Photo</span>
+                    </label>
+                </div>
+                <div class="md:col-span-4">
+                    <input type="text" 
+                           name="comment_${item.id}" 
+                           value="${item.comment || ''}"
+                           placeholder="Add comment (optional)"
+                           class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                </div>
+            </div>
+            <div id="photo_preview_${item.id}" class="hidden mt-2 ml-0 md:ml-3">
+                <div class="flex items-center gap-2">
+                    <img class="h-16 w-16 object-cover rounded border-2 border-green-500">
+                    <button type="button" 
+                            onclick="removePhoto(${item.id})"
+                            class="text-red-600 hover:text-red-800 text-xs">
+                        <i class="fas fa-times-circle"></i> Remove
+                    </button>
+                </div>
+            </div>
+        `;
+
+        return row;
+    }
+
+    // Submit all ratings
+    submitBtn.addEventListener('click', function() {
+        const ratings = [];
+        const allItemRows = document.querySelectorAll('[data-item-id]');
+
+        allItemRows.forEach(row => {
+            const itemId = row.dataset.itemId;
+            const ratingInput = row.querySelector(`input[name="rating_${itemId}"]:checked`);
+            const commentInput = row.querySelector(`input[name="comment_${itemId}"]`);
+            const photoInput = row.querySelector(`input[name="photo_${itemId}"]`);
+
+            if (ratingInput) {
+                const ratingData = {
+                    item_id: parseInt(itemId),
+                    rating: parseInt(ratingInput.value),
+                    comment: commentInput ? commentInput.value : ''
+                };
+                
+                // Include photo if exists
+                if (photoInput && photoInput.files && photoInput.files[0]) {
+                    ratingData.has_photo = true;
+                } else {
+                    ratingData.has_photo = false;
+                }
+                
+                ratings.push(ratingData);
+            }
+        });
+
+        if (ratings.length === 0) {
+            showMessage('Please expand subcategories and rate at least one item', 'warning');
+            return;
+        }
+
+        // Disable button while submitting
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+
+        // Prepare FormData for file upload
+        const formData = new FormData();
+        formData.append('ratings', JSON.stringify(ratings));
+        
+        // Append photos
+        allItemRows.forEach(row => {
+            const itemId = row.dataset.itemId;
+            const photoInput = row.querySelector(`input[name="photo_${itemId}"]`);
+            if (photoInput && photoInput.files && photoInput.files[0]) {
+                formData.append(`photo_${itemId}`, photoInput.files[0]);
+            }
+        });
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                         getCookie('csrftoken');
+
+        fetch('{% url 'api_submit_ratings' %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(data.message, 'success');
+                // Reload the category to refresh all items
+                const categoryId = categorySelect.value;
+                if (categoryId) {
+                    setTimeout(() => {
+                        categorySelect.dispatchEvent(new Event('change'));
+                    }, 1000);
+                }
+            } else {
+                showMessage(data.error || 'Error saving ratings', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error submitting ratings:', error);
+            showMessage('Error saving ratings', 'error');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save All Ratings';
+        });
+    });
+
+    // Handle photo change
+    window.handlePhotoChange = function(itemId) {
+        const photoInput = document.getElementById(`photo_${itemId}`);
+        const photoPreview = document.getElementById(`photo_preview_${itemId}`);
+        const photoLabel = document.getElementById(`photo_label_${itemId}`);
+        
+        if (photoInput.files && photoInput.files[0]) {
+            const file = photoInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const img = photoPreview.querySelector('img');
+                img.src = e.target.result;
+                photoPreview.classList.remove('hidden');
+                photoLabel.innerHTML = '<i class="fas fa-check mr-1"></i>Photo Added';
+                photoLabel.parentElement.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                photoLabel.parentElement.classList.add('bg-green-600', 'hover:bg-green-700');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Remove photo
+    window.removePhoto = function(itemId) {
+        const photoInput = document.getElementById(`photo_${itemId}`);
+        const photoPreview = document.getElementById(`photo_preview_${itemId}`);
+        const photoLabel = document.getElementById(`photo_label_${itemId}`);
+        
+        photoInput.value = '';
+        photoPreview.classList.add('hidden');
+        photoLabel.innerHTML = '<i class="fas fa-camera mr-1.5"></i>Add Photo';
+        photoLabel.parentElement.classList.remove('bg-green-600', 'hover:bg-green-700');
+        photoLabel.parentElement.classList.add('bg-blue-600', 'hover:bg-blue-700');
+    };
+
+    // Show message function
+    function showMessage(message, type = 'info') {
+        const messageContainer = document.getElementById('messageContainer');
+        const colors = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            warning: 'bg-yellow-500',
+            info: 'bg-blue-500'
+        };
+
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-exclamation-circle',
+            warning: 'fa-exclamation-triangle',
+            info: 'fa-info-circle'
+        };
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `${colors[type]} text-white px-6 py-4 rounded-lg shadow-lg mb-4 flex items-center transform transition-all duration-300`;
+        messageDiv.innerHTML = `
+            <i class="fas ${icons[type]} mr-3"></i>
+            <span>${message}</span>
+        `;
+
+        messageContainer.appendChild(messageDiv);
+
+        setTimeout(() => {
+            messageDiv.style.opacity = '0';
+            setTimeout(() => messageDiv.remove(), 300);
+        }, 3000);
+    }
+
+    // Get CSRF token from cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ category.name }} - Kannammal Agro{% endblock %}
+{% block page_title %}{{ category.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .subcategory-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .subcategory-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .subcategory-card:hover .card-icon {
+        transform: scale(1.1);
+    }
+    
+    .card-icon {
+        transition: transform 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-sm">
+        <a href="{% url 'dashboard' %}" class="text-gray-500 hover:text-primary-600">
+            <i class="fas fa-home"></i>
+        </a>
+        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+        <span class="text-gray-900 font-medium">{{ category.name }}</span>
+    </nav>
+    
+    <!-- Category Header -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div class="w-20 h-20 rounded-2xl flex items-center justify-center"
+                 style="background-color: {{ category.color }}20;">
+                <span class="text-5xl">{{ category.icon }}</span>
+            </div>
+            <div class="flex-1">
+                <h1 class="text-2xl font-bold text-gray-900">{{ category.name }}</h1>
+                {% if category.description %}
+                <p class="text-gray-500 mt-1">{{ category.description }}</p>
+                {% endif %}
+                <div class="flex flex-wrap gap-2 mt-3">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        <i class="fas fa-folder mr-1"></i>
+                        {{ subcategories.count }} Sub Categories
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                        <i class="fas fa-boxes mr-1"></i>
+                        {{ items|length }} Items
+                    </span>
+                </div>
+            </div>
+            
+            {% if can_enter_price %}
+            <a href="{% url 'enter_price' category.id %}" 
+               class="inline-flex items-center px-5 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/25">
+                <i class="fas fa-plus mr-2"></i>
+                Enter Prices
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Sub Categories Section -->
+    <div class="space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900">
+            <i class="fas fa-folder-open mr-2 text-primary-500"></i>
+            Select a Sub Category
+        </h2>
+        
+        <!-- Subcategory Cards Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {% for subcategory in subcategories %}
+            <a href="{% url 'subcategory_detail' category.id subcategory.id %}" 
+               class="subcategory-card bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col items-center text-center hover:border-primary-300 relative">
+                {% if subcategory.has_recent_prices %}
+                <span class="absolute top-2 right-2 w-3 h-3 bg-green-500 rounded-full shadow-sm" title="Has recent prices"></span>
+                {% endif %}
+                <div class="card-icon w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
+                     style="background: linear-gradient(135deg, #22c55e20 0%, #16a34a20 100%);">
+                    <span class="text-3xl">{{ subcategory.icon }}</span>
+                </div>
+                <h3 class="font-semibold text-gray-900 text-sm leading-tight">{{ subcategory.name }}</h3>
+                <p class="text-xs text-gray-500 mt-1">{{ subcategory.accessible_item_count }} items</p>
+            </a>
+            {% empty %}
+            <div class="col-span-full bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+                <i class="fas fa-folder-open text-gray-300 text-5xl mb-4"></i>
+                <p class="text-gray-500 text-lg">No subcategories available</p>
+                <p class="text-gray-400 text-sm mt-2">Contact your administrator for access</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Info Card -->
+    <div class="bg-blue-50 rounded-2xl p-6 border border-blue-100">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-600"></i>
+            </div>
+            <div>
+                <h4 class="font-semibold text-blue-900">How to Use</h4>
+                <p class="text-blue-700 text-sm mt-1">
+                    Click on any sub category card above to view all items and their prices. 
+                    You can enter prices and compare rates for each item.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

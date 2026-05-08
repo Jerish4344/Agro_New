@@ -1,0 +1,57 @@
+/* Custom styles for Agro Price Tracker */
+
+/* Additional utility classes */
+.gradient-text {
+    background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Smooth transitions */
+* {
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* Custom focus styles */
+input:focus, select:focus, textarea:focus, button:focus {
+    outline: none;
+}
+
+/* Table styles */
+.price-grid {
+    display: grid;
+    gap: 1px;
+    background-color: #e5e7eb;
+}
+
+.price-grid > div {
+    background-color: white;
+    padding: 1rem;
+}
+
+/* Loading spinner */
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #22c55e;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+    .responsive-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}

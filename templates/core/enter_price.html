@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Enter Prices - {% if selected_subcategory %}{{ selected_subcategory.name }} - {% endif %}{{ category.name }} - Kannammal Agro{% endblock %}
+{% block page_title %}Enter Prices{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-sm">
+        <a href="{% url 'dashboard' %}" class="text-gray-500 hover:text-primary-600">
+            <i class="fas fa-home"></i>
+        </a>
+        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+        <a href="{% url 'category_detail' category.id %}" class="text-gray-500 hover:text-primary-600">
+            {{ category.name }}
+        </a>
+        {% if selected_subcategory %}
+        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+        <a href="{% url 'subcategory_detail' category.id selected_subcategory.id %}" class="text-gray-500 hover:text-primary-600">
+            {{ selected_subcategory.name }}
+        </a>
+        {% endif %}
+        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+        <span class="text-gray-900 font-medium">Enter Prices</span>
+    </nav>
+    
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center"
+                 style="background-color: {{ category.color }}20;">
+                <span class="text-4xl">{% if selected_subcategory %}{{ selected_subcategory.icon }}{% else %}{{ category.icon }}{% endif %}</span>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-gray-900">Enter Prices for {% if selected_subcategory %}{{ selected_subcategory.name }}{% else %}{{ category.name }}{% endif %}</h1>
+                <p class="text-gray-500 mt-1">Update today's prices for {{ items|length }} items</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Price Entry Form -->
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Farmer Selection (for buyers) -->
+        {% if available_farmers %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-user-tie mr-2 text-gray-400"></i>
+                Select Farmer / Shop <span class="text-red-500">*</span>
+            </label>
+            <select name="farmer_id" 
+                    id="farmer_select"
+                    class="w-full sm:w-96 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    onchange="this.form.action = window.location.pathname + '?farmer_id=' + this.value; if(this.value) { window.location.href = window.location.pathname + '?farmer_id=' + this.value; }"
+                    required>
+                <option value="">-- Select a Farmer --</option>
+                {% for farmer in available_farmers %}
+                <option value="{{ farmer.id }}" {% if selected_farmer and selected_farmer.id == farmer.id %}selected{% endif %}>
+                    {{ farmer.name }}{% if farmer.region %} - {{ farmer.region.name }}{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+            {% if selected_farmer %}
+            <input type="hidden" name="farmer_id" value="{{ selected_farmer.id }}">
+            <p class="text-sm text-green-600 mt-2">
+                <i class="fas fa-check-circle mr-1"></i>
+                Entering prices for: <strong>{{ selected_farmer.name }}</strong>
+                {% if selected_farmer.region %} ({{ selected_farmer.region.name }}){% endif %}
+            </p>
+            {% else %}
+            <p class="text-sm text-amber-600 mt-2">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                Please select a farmer to continue entering prices
+            </p>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Date Selection -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-calendar mr-2 text-gray-400"></i>
+                Select Date
+            </label>
+            <input type="date" 
+                   name="date" 
+                   value="{{ today|date:'Y-m-d' }}"
+                   class="w-full sm:w-64 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+        </div>
+        
+        <!-- Items Price Entries - Grouped by Subcategory -->
+        {% for subcategory, subcategory_items in items_by_subcategory.items %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden {% if available_farmers and not selected_farmer %}opacity-50{% endif %}">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-primary-100">
+                <h3 class="font-semibold text-primary-900">
+                    <i class="fas fa-folder mr-2 text-primary-500"></i>
+                    {{ subcategory.name }}
+                </h3>
+                <p class="text-sm text-primary-600 mt-1">{{ subcategory_items|length }} items</p>
+            </div>
+            
+            <div class="divide-y divide-gray-100">
+                {% for item in subcategory_items %}
+                <div class="p-6 hover:bg-gray-50 transition-colors">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">{{ item.name }}</h4>
+                            {% if item.code %}
+                            <p class="text-sm text-gray-500">Code: {{ item.code }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₹</span>
+                                <input type="number" 
+                                       name="price_{{ item.id }}" 
+                                       data-item-id="{{ item.id }}"
+                                       value="{% if item.id in today_prices %}{{ today_prices|get_item:item.id }}{% endif %}"
+                                       placeholder="0.00"
+                                       step="0.01"
+                                       min="0"
+                                       {% if available_farmers and not selected_farmer %}disabled{% endif %}
+                                       class="price-input w-40 pl-8 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-right text-lg font-semibold {% if available_farmers and not selected_farmer %}bg-gray-100 cursor-not-allowed{% endif %}">
+                            </div>
+                            <!-- Status indicator -->
+                            <div class="status-indicator w-20 flex items-center justify-center" data-item-id="{{ item.id }}">
+                                {% if item.id in today_prices %}
+                                <span class="saved-badge px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Saved
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+            <i class="fas fa-box-open text-gray-300 text-4xl mb-3"></i>
+            <p class="text-gray-500">No items available for price entry</p>
+            <p class="text-gray-400 text-sm mt-2">Contact your administrator to get access to items</p>
+        </div>
+        {% endfor %}
+        
+        {% if items %}
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3">
+            <button type="submit" 
+                    {% if available_farmers and not selected_farmer %}disabled{% endif %}
+                    class="flex-1 sm:flex-initial px-8 py-4 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2 {% if available_farmers and not selected_farmer %}opacity-50 cursor-not-allowed{% endif %}">
+                <i class="fas fa-save"></i>
+                Save All Prices
+            </button>
+            <a href="{% url 'category_detail' category.id %}" 
+               class="flex-1 sm:flex-initial px-8 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                <i class="fas fa-times"></i>
+                Cancel
+            </a>
+        </div>
+        {% endif %}
+    </form>
+    
+    <!-- Tips -->
+    <div class="bg-amber-50 rounded-2xl p-6 border border-amber-100">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-lightbulb text-amber-600"></i>
+            </div>
+            <div>
+                <h4 class="font-semibold text-amber-900">Tips for Accurate Pricing</h4>
+                <ul class="text-amber-700 text-sm mt-2 space-y-1">
+                    <li><i class="fas fa-check mr-2"></i>Enter current market prices</li>
+                    <li><i class="fas fa-check mr-2"></i>Update daily for best accuracy</li>
+                    <li><i class="fas fa-check mr-2"></i>Leave blank if no price available</li>
+                    <li><i class="fas fa-check mr-2"></i>Prices are automatically saved when you leave a field</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const priceInputs = document.querySelectorAll('.price-input');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const dateInput = document.querySelector('input[name="date"]');
+    const farmerSelect = document.getElementById('farmer_select');
+    
+    // Track original values to detect changes
+    const originalValues = {};
+    priceInputs.forEach(input => {
+        originalValues[input.dataset.itemId] = input.value;
+    });
+    
+    priceInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            const itemId = this.dataset.itemId;
+            const price = this.value;
+            const originalValue = originalValues[itemId];
+            
+            // Skip if value hasn't changed
+            if (price === originalValue) {
+                return;
+            }
+            
+            // Get farmer ID if available
+            let farmerId = null;
+            if (farmerSelect) {
+                farmerId = farmerSelect.value;
+                // If farmer is required but not selected, don't auto-save
+                if (!farmerId && farmerSelect.required) {
+                    return;
+                }
+            }
+            
+            // Get the date
+            const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+            
+            // Find the status indicator
+            const statusIndicator = document.querySelector(`.status-indicator[data-item-id="${itemId}"]`);
+            
+            // Show loading indicator
+            statusIndicator.innerHTML = `
+                <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <i class="fas fa-spinner fa-spin mr-1"></i>Saving...
+                </span>
+            `;
+            
+            // Make AJAX request
+            fetch('{% url "api_save_price" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    item_id: itemId,
+                    farmer_id: farmerId,
+                    price: price,
+                    date: date
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update original value
+                    originalValues[itemId] = price;
+                    
+                    // Show success indicator
+                    if (data.action === 'deleted') {
+                        statusIndicator.innerHTML = '';
+                    } else {
+                        statusIndicator.innerHTML = `
+                            <span class="saved-badge px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <i class="fas fa-check mr-1"></i>Saved
+                            </span>
+                        `;
+                    }
+                    
+                    // Flash the input border green briefly
+                    input.classList.remove('border-gray-300');
+                    input.classList.add('border-green-500');
+                    setTimeout(() => {
+                        input.classList.remove('border-green-500');
+                        input.classList.add('border-gray-300');
+                    }, 1000);
+                } else {
+                    // Show error
+                    statusIndicator.innerHTML = `
+                        <span class="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800" title="${data.error || 'Failed to save'}">
+                            <i class="fas fa-times mr-1"></i>Error
+                        </span>
+                    `;
+                    input.classList.remove('border-gray-300');
+                    input.classList.add('border-red-500');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving price:', error);
+                statusIndicator.innerHTML = `
+                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        <i class="fas fa-times mr-1"></i>Error
+                    </span>
+                `;
+                input.classList.remove('border-gray-300');
+                input.classList.add('border-red-500');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

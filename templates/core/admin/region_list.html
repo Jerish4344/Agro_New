@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Regions - Admin - Kannammal Agro{% endblock %}
+{% block page_title %}Region Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">All Regions</h2>
+            <p class="text-gray-500 text-sm mt-1">Manage geographical regions and locations</p>
+        </div>
+        <a href="{% url 'region_create' %}" 
+           class="inline-flex items-center px-5 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/25">
+            <i class="fas fa-plus mr-2"></i>
+            Add Region
+        </a>
+    </div>
+    
+    <!-- Regions Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Region</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">State</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Country</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Users</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for region in regions %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                    <i class="fas fa-map-marker-alt text-blue-600"></i>
+                                </div>
+                                <span class="font-medium text-gray-900">{{ region.name }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-gray-700">{{ region.state }}</td>
+                        <td class="px-6 py-4 text-gray-700">{{ region.country }}</td>
+                        <td class="px-6 py-4">
+                            {% if region.is_active %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                Inactive
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-gray-700">{{ region.users.count }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{% url 'region_edit' region.id %}" 
+                               class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-block"
+                               title="Edit Region">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <i class="fas fa-map text-gray-300 text-4xl mb-3"></i>
+                            <p class="text-gray-500">No regions created yet</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

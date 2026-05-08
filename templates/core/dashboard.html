@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Kannammal Agro{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Welcome Banner -->
+    <div class="gradient-bg rounded-2xl p-6 text-white relative overflow-hidden">
+        <div class="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+        <div class="absolute left-1/2 bottom-0 w-32 h-32 bg-white/10 rounded-full translate-y-1/2"></div>
+        <div class="relative flex items-center gap-4">
+            <img src="{% static 'images/logo.png' %}" alt="Kannammal Agro" class="h-16 w-16 rounded-full bg-white p-1 hidden sm:block">
+            <div>
+                <h2 class="text-2xl font-bold">Welcome back, {{ user.first_name }}! 👋</h2>
+                <p class="text-white/80 mt-1">Kannammal Agro Industries Pvt Ltd</p>
+            </div>
+        </div>
+    </div>
+    
+    {% if user.role == 'admin' or user.role == 'business_head' %}
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_users }}</p>
+                    <p class="text-xs text-gray-500">Total Users</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                    <i class="fas fa-th-large text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_categories }}</p>
+                    <p class="text-xs text-gray-500">Categories</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <i class="fas fa-tags text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_subcategories }}</p>
+                    <p class="text-xs text-gray-500">Subcategories</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
+                    <i class="fas fa-boxes text-indigo-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_items }}</p>
+                    <p class="text-xs text-gray-500">Items</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
+                    <i class="fas fa-rupee-sign text-orange-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.today_entries }}</p>
+                    <p class="text-xs text-gray-500">Today's Prices</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <i class="fas fa-tractor text-emerald-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_farmers }}</p>
+                    <p class="text-xs text-gray-500">Farmers</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center">
+                    <i class="fas fa-shopping-cart text-cyan-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total_buyers }}</p>
+                    <p class="text-xs text-gray-500">Buyers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Categories Section (Not for Store Managers/Team Leaders/Store Heads) -->
+    {% if user.role not in 'store_manager,team_leader,store_head' %}
+    <div>
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-th-large mr-2 text-primary-500"></i>
+                Browse Categories
+            </h3>
+            <p class="text-sm text-gray-500">Click on a category to view prices</p>
+        </div>
+        
+        {% if categories %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {% for category in categories %}
+            <a href="{% url 'category_detail' category.id %}" 
+               class="card-hover group bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center block">
+                <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110"
+                     style="background-color: {{ category.color }}20;">
+                    <span class="text-4xl">{{ category.icon }}</span>
+                </div>
+                <h4 class="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
+                    {{ category.name }}
+                </h4>
+                <p class="text-xs text-gray-500 mt-1">
+                    {{ category.accessible_subcategory_count }} varieties
+                </p>
+                <div class="mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span class="inline-flex items-center text-xs font-medium text-primary-600">
+                        View Prices <i class="fas fa-arrow-right ml-1"></i>
+                    </span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+            <div class="w-20 h-20 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <i class="fas fa-folder-open text-gray-400 text-3xl"></i>
+            </div>
+            <h4 class="text-lg font-semibold text-gray-900">No Categories Available</h4>
+            <p class="text-gray-500 mt-2">
+                {% if user.role == 'admin' %}
+                Start by adding categories from the admin panel.
+                {% else %}
+                Contact your administrator to get access to categories.
+                {% endif %}
+            </p>
+            {% if user.role == 'admin' %}
+            <a href="{% url 'category_create' %}" class="mt-4 inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors">
+                <i class="fas fa-plus mr-2"></i> Add Category
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Quick Actions for Farmers/Buyers -->
+    {% if user.role == 'farmer' or user.role == 'buyer' %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-bolt mr-2 text-yellow-500"></i>
+            Quick Actions
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                <div class="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center">
+                    <i class="fas fa-edit text-primary-600 text-xl"></i>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900">Enter Today's Prices</h4>
+                    <p class="text-sm text-gray-500">Update prices for your categories</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-900">View Price History</h4>
+                    <p class="text-sm text-gray-500">Check past price entries</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Store Manager/Team Leader/Store Head Actions -->
+    {% if user.role in 'store_manager,team_leader,store_head' %}
+    <div class="bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl shadow-xl p-8 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-2xl font-bold mb-2">
+                    <i class="fas fa-star mr-3"></i>Rate F&V Items
+                </h3>
+                {% if user.role == 'store_head' %}
+                <p class="text-white/90 mb-1">Role: <span class="font-semibold">Store Head</span></p>
+                <p class="text-white/80 text-sm">Manage and rate multiple stores</p>
+                {% else %}
+                <p class="text-white/90 mb-1">Store: <span class="font-semibold">{{ user.assigned_store.name }}</span></p>
+                <p class="text-white/80 text-sm">Rate fruits and vegetables for quality tracking</p>
+                {% endif %}
+            </div>
+            <a href="{% url 'rating_form' %}" 
+               class="inline-flex items-center px-8 py-4 bg-white text-green-700 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-200 shadow-lg transform hover:scale-105">
+                <i class="fas fa-star-half-alt mr-2"></i>Start Rating
+            </a>
+        </div>
+        <div class="mt-6 pt-6 border-t border-white/20">
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <p class="text-3xl font-bold">0</p>
+                    <p class="text-white/80 text-sm">Poor</p>
+                </div>
+                <div>
+                    <p class="text-3xl font-bold">5</p>
+                    <p class="text-white/80 text-sm">Average</p>
+                </div>
+                <div>
+                    <p class="text-3xl font-bold">10</p>
+                    <p class="text-white/80 text-sm">Excellent</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

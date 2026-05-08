@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Permissions - {{ user_obj.get_full_name }} - Kannammal Agro{% endblock %}
+{% block page_title %}User Permissions{% endblock %}
+
+{% block extra_css %}
+<style>
+    .category-section {
+        transition: all 0.3s ease;
+    }
+    .items-grid {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+    }
+    .items-grid.expanded {
+        max-height: 5000px;
+        transition: max-height 0.5s ease-in;
+    }
+    .item-checkbox:checked + .item-label {
+        background-color: #dcfce7 !important;
+        border-color: #22c55e !important;
+    }
+    .item-checkbox:checked + .item-label .check-icon {
+        display: flex !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-sm">
+        <a href="{% url 'admin_dashboard' %}" class="text-gray-500 hover:text-primary-600">
+            <i class="fas fa-home"></i>
+        </a>
+        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+        <a href="{% url 'user_list' %}" class="text-gray-500 hover:text-primary-600">Users</a>
+        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+        <span class="text-gray-900 font-medium">Permissions</span>
+    </nav>
+    
+    <!-- User Info -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
+                <span class="text-primary-700 font-bold text-xl">
+                    {{ user_obj.first_name|slice:":1"|upper }}{{ user_obj.last_name|slice:":1"|upper }}
+                </span>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-gray-900">{{ user_obj.get_full_name }}</h2>
+                <p class="text-gray-500">{{ user_obj.email }}</p>
+                <span class="inline-flex items-center mt-2 px-3 py-1 rounded-full text-xs font-medium
+                    {% if user_obj.role == 'admin' %}bg-red-100 text-red-800
+                    {% elif user_obj.role == 'business_head' %}bg-purple-100 text-purple-800
+                    {% elif user_obj.role == 'farmer' %}bg-green-100 text-green-800
+                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ user_obj.get_role_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Permissions Form -->
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 class="font-semibold text-gray-900">
+                    <i class="fas fa-shield-alt mr-2 text-gray-400"></i>
+                    Category & Item Permissions
+                </h3>
+                <p class="text-sm text-gray-500 mt-1">Select categories and specific items this user can access</p>
+            </div>
+            
+            <div class="divide-y divide-gray-100">
+                {% for category in categories %}
+                {% with perm=existing_permissions|get_item:category.id %}
+                <div class="category-section p-6">
+                    <!-- Category Header -->
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center"
+                                 style="background-color: {{ category.color }}20;">
+                                <span class="text-2xl">{{ category.icon }}</span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900">{{ category.name }}</h4>
+                                <p class="text-sm text-gray-500">
+                                    {{ category.subcategories.count }} subcategories
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-4 flex-wrap">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" 
+                                       name="can_view_{{ category.id }}"
+                                       id="can_view_{{ category.id }}"
+                                       {% if perm.can_view %}checked{% endif %}
+                                       class="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                                <span class="text-sm font-medium text-gray-700">Can View</span>
+                            </label>
+                            
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" 
+                                       name="can_edit_{{ category.id }}"
+                                       id="can_edit_{{ category.id }}"
+                                       {% if perm.can_edit %}checked{% endif %}
+                                       class="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                                <span class="text-sm font-medium text-gray-700">Can Edit Prices</span>
+                            </label>
+                            
+                            <button type="button" 
+                                    onclick="toggleCategory('category-{{ category.id }}')"
+                                    class="flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors">
+                                <span class="text-sm font-medium">Select Items</span>
+                                <i class="fas fa-chevron-down transition-transform" id="icon-category-{{ category.id }}"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Items grouped by Subcategory -->
+                    <div class="items-grid mt-4" id="category-{{ category.id }}">
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                            <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                <p class="text-sm font-medium text-gray-700">
+                                    <i class="fas fa-boxes mr-2 text-primary-500"></i>
+                                    Select specific items (leave empty for all items):
+                                </p>
+                                <div class="flex gap-2">
+                                    <button type="button" 
+                                            onclick="selectAllItems('{{ category.id }}')"
+                                            class="text-xs px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-medium">
+                                        <i class="fas fa-check-double mr-1"></i> Select All
+                                    </button>
+                                    <button type="button" 
+                                            onclick="deselectAllItems('{{ category.id }}')"
+                                            class="text-xs px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium">
+                                        <i class="fas fa-times mr-1"></i> Deselect All
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {% for subcategory in category.subcategories.all %}
+                            <div class="mb-6 last:mb-0">
+                                <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
+                                    <span class="text-xl">{{ subcategory.icon }}</span>
+                                    <h5 class="font-semibold text-gray-800">{{ subcategory.name }}</h5>
+                                    <span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">{{ subcategory.items.count }} items</span>
+                                    <button type="button" 
+                                            onclick="toggleSubcategoryItems('{{ category.id }}', '{{ subcategory.id }}')"
+                                            class="ml-auto text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 font-medium">
+                                        <i class="fas fa-check-square mr-1"></i> Toggle All
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                    {% for item in subcategory.items.all %}
+                                    <div class="relative">
+                                        <input type="checkbox" 
+                                               name="items_{{ category.id }}"
+                                               value="{{ item.id }}"
+                                               id="item_{{ item.id }}"
+                                               data-category="{{ category.id }}"
+                                               data-subcategory="{{ subcategory.id }}"
+                                               {% if perm.items and item.id in perm.items %}checked{% endif %}
+                                               class="item-checkbox sr-only">
+                                        <label for="item_{{ item.id }}" 
+                                               class="item-label flex items-center gap-2 p-3 rounded-lg border-2 border-gray-200 cursor-pointer hover:border-primary-300 hover:bg-primary-50 transition-all bg-white">
+                                            <span class="check-icon hidden w-5 h-5 rounded bg-green-500 items-center justify-center flex-shrink-0">
+                                                <i class="fas fa-check text-white text-xs"></i>
+                                            </span>
+                                            <span class="w-5 h-5 rounded border-2 border-gray-300 flex-shrink-0 unchecked-icon"></span>
+                                            <div class="min-w-0 flex-1">
+                                                <span class="text-sm text-gray-800 font-medium block truncate" title="{{ item.name }}">{{ item.name }}</span>
+                                                {% if item.code %}
+                                                <span class="text-xs text-gray-400">{{ item.code }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </label>
+                                    </div>
+                                    {% empty %}
+                                    <p class="text-sm text-gray-400 col-span-full py-2">No items in this subcategory</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+                {% empty %}
+                <div class="p-12 text-center">
+                    <i class="fas fa-folder-open text-gray-300 text-4xl mb-3"></i>
+                    <p class="text-gray-500">No categories available</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="flex gap-3 sticky bottom-4 bg-white p-4 rounded-xl shadow-lg border border-gray-200">
+            <button type="submit" 
+                    class="flex-1 sm:flex-initial px-8 py-3 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/25">
+                <i class="fas fa-save mr-2"></i>
+                Save Permissions
+            </button>
+            <a href="{% url 'user_list' %}" 
+               class="flex-1 sm:flex-initial px-8 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors text-center">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleCategory(id) {
+        const content = document.getElementById(id);
+        const icon = document.getElementById('icon-' + id);
+        
+        if (content.classList.contains('expanded')) {
+            content.classList.remove('expanded');
+            icon.style.transform = 'rotate(0deg)';
+        } else {
+            content.classList.add('expanded');
+            icon.style.transform = 'rotate(180deg)';
+        }
+    }
+    
+    function selectAllItems(categoryId) {
+        const checkboxes = document.querySelectorAll(`input[name="items_${categoryId}"]`);
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+            updateCheckboxUI(cb);
+        });
+    }
+    
+    function deselectAllItems(categoryId) {
+        const checkboxes = document.querySelectorAll(`input[name="items_${categoryId}"]`);
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+            updateCheckboxUI(cb);
+        });
+    }
+    
+    function toggleSubcategoryItems(categoryId, subcategoryId) {
+        const checkboxes = document.querySelectorAll(`input[data-category="${categoryId}"][data-subcategory="${subcategoryId}"]`);
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => {
+            cb.checked = !allChecked;
+            updateCheckboxUI(cb);
+        });
+    }
+    
+    function updateCheckboxUI(checkbox) {
+        const label = checkbox.nextElementSibling;
+        const checkIcon = label.querySelector('.check-icon');
+        const uncheckedIcon = label.querySelector('.unchecked-icon');
+        
+        if (checkbox.checked) {
+            label.classList.add('bg-green-50', 'border-green-400');
+            label.classList.remove('border-gray-200', 'bg-white');
+            if (checkIcon) checkIcon.classList.remove('hidden');
+            if (checkIcon) checkIcon.classList.add('flex');
+            if (uncheckedIcon) uncheckedIcon.classList.add('hidden');
+        } else {
+            label.classList.remove('bg-green-50', 'border-green-400');
+            label.classList.add('border-gray-200', 'bg-white');
+            if (checkIcon) checkIcon.classList.add('hidden');
+            if (checkIcon) checkIcon.classList.remove('flex');
+            if (uncheckedIcon) uncheckedIcon.classList.remove('hidden');
+        }
+    }
+    
+    // Initialize UI on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update all checkboxes UI
+        const allCheckboxes = document.querySelectorAll('.item-checkbox');
+        allCheckboxes.forEach(cb => {
+            updateCheckboxUI(cb);
+            cb.addEventListener('change', function() {
+                updateCheckboxUI(this);
+            });
+        });
+        
+        // Auto-expand categories that have permissions
+        const categoriesWithPermissions = document.querySelectorAll('.category-section');
+        categoriesWithPermissions.forEach(section => {
+            const canView = section.querySelector('input[id^="can_view_"]');
+            const canEdit = section.querySelector('input[id^="can_edit_"]');
+            if ((canView && canView.checked) || (canEdit && canEdit.checked)) {
+                const categoryId = canView.id.replace('can_view_', '');
+                toggleCategory('category-' + categoryId);
+            }
+        });
+    });
+</script>
+{% endblock %}

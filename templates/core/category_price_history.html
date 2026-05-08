@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Price History - {{ category.name }} - Kannammal Agro{% endblock %}
+{% block page_title %}Price History{% endblock %}
+
+{% block extra_css %}
+<style>
+    .price-table {
+        min-width: 100%;
+    }
+    
+    .price-table th,
+    .price-table td {
+        min-width: 140px;
+    }
+    
+    .price-table th:first-child,
+    .price-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background: white;
+    }
+    
+    .price-entry {
+        transition: all 0.2s ease;
+    }
+    
+    .price-entry:hover {
+        transform: scale(1.02);
+    }
+    
+    .lowest-badge {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-sm">
+        <a href="{% url 'dashboard' %}" class="text-gray-500 hover:text-primary-600">
+            <i class="fas fa-home"></i>
+        </a>
+        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+        <a href="{% url 'category_detail' category.id %}" class="text-gray-500 hover:text-primary-600">
+            {{ category.name }}
+        </a>
+        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+        <span class="text-gray-900 font-medium">Price History</span>
+    </nav>
+    
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center"
+                 style="background-color: {{ category.color }}20;">
+                <span class="text-4xl">{{ category.icon }}</span>
+            </div>
+            <div class="flex-1">
+                <h1 class="text-xl font-bold text-gray-900">{{ category.name }} - Price History</h1>
+                <p class="text-gray-500 mt-1">Last 30 days price data for {{ items|length }} items</p>
+            </div>
+            <a href="{% url 'category_detail' category.id %}" 
+               class="inline-flex items-center px-5 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Category
+            </a>
+        </div>
+    </div>
+    
+    <!-- Legend -->
+    {% if can_see_all_prices %}
+    <div class="flex flex-wrap items-center gap-4 text-sm bg-white rounded-xl p-4 border border-gray-100">
+        <span class="font-medium text-gray-700">Legend:</span>
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-green-200 border border-green-400"></div>
+            <span class="text-gray-600">Lowest Price</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
+            <span class="text-gray-600">Regular Price</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">F</span>
+            <span class="text-gray-600">Farmer</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700">B</span>
+            <span class="text-gray-600">Buyer</span>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Price Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="price-table w-full">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50">
+                            Date
+                        </th>
+                        {% for item in items %}
+                        <th class="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex flex-col">
+                                <span class="text-primary-700">{{ item.name }}</span>
+                                <span class="text-gray-400 font-normal normal-case text-xs">{{ item.subcategory.name }}</span>
+                                {% if item.code %}
+                                <span class="text-gray-400 font-normal normal-case text-xs">{{ item.code }}</span>
+                                {% endif %}
+                            </div>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for date in dates reversed %}
+                    <tr class="hover:bg-gray-50 transition-colors {% if date == today %}bg-yellow-50{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap {% if date == today %}bg-yellow-50{% else %}bg-white{% endif %}">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-900">
+                                    {{ date|date:"d M, Y" }}
+                                </span>
+                                {% if date == today %}
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-yellow-200 text-yellow-800">
+                                    Today
+                                </span>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs text-gray-500">{{ date|date:"l" }}</span>
+                        </td>
+                        {% for item in items %}
+                        <td class="px-4 py-4">
+                            {% if date in price_data and item.id in price_data|get_item:date %}
+                            <div class="space-y-2">
+                                {% for entry in price_data|get_item:date|get_item:item.id %}
+                                <div class="price-entry p-2 rounded-lg {% if entry.is_lowest and can_see_all_prices %}bg-green-100 border border-green-300{% else %}bg-gray-50 border border-gray-200{% endif %}">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-lg font-bold {% if entry.is_lowest and can_see_all_prices %}text-green-700{% else %}text-gray-900{% endif %}">
+                                            ₹{{ entry.price }}
+                                        </span>
+                                        {% if entry.is_lowest and can_see_all_prices %}
+                                        <span class="lowest-badge px-2 py-0.5 rounded text-xs font-bold bg-green-500 text-white">
+                                            LOW
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    {% if can_see_all_prices %}
+                                    <div class="flex items-center gap-1 mt-1">
+                                        <span class="text-xs text-gray-500 truncate">
+                                            {{ entry.user.first_name }}
+                                        </span>
+                                        {% if entry.user.role == 'farmer' %}
+                                        <span class="px-1 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">F</span>
+                                        {% else %}
+                                        <span class="px-1 py-0.5 rounded text-xs bg-blue-100 text-blue-700">B</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <span class="text-gray-300 text-sm">-</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{{ items|length|add:1 }}" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-chart-bar text-gray-300 text-4xl mb-3"></i>
+                                <p class="text-gray-500">No price data available for the last 30 days</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

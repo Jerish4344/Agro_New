@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ subcategory.name }} - {{ category.name }} - Kannammal Agro{% endblock %}
+{% block page_title %}{{ subcategory.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .price-table {
+        min-width: 100%;
+    }
+    
+    .price-table th,
+    .price-table td {
+        min-width: 180px;
+    }
+    
+    .price-table th:first-child,
+    .price-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background: white;
+        min-width: 140px;
+    }
+    
+    .price-entry {
+        transition: all 0.2s ease;
+    }
+    
+    .price-entry:hover {
+        transform: scale(1.02);
+    }
+    
+    .lowest-badge {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-sm flex-wrap">
+        <a href="{% url 'dashboard' %}" class="text-gray-500 hover:text-primary-600">
+            <i class="fas fa-home"></i>
+        </a>
+        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+        <a href="{% url 'category_detail' category.id %}" class="text-gray-500 hover:text-primary-600">
+            {{ category.name }}
+        </a>
+        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+        <span class="text-gray-900 font-medium">{{ subcategory.name }}</span>
+    </nav>
+    
+    <!-- Subcategory Header -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div class="w-20 h-20 rounded-2xl flex items-center justify-center"
+                 style="background: linear-gradient(135deg, #22c55e20 0%, #16a34a20 100%);">
+                <span class="text-5xl">{{ subcategory.icon }}</span>
+            </div>
+            <div class="flex-1">
+                <h1 class="text-2xl font-bold text-gray-900">{{ subcategory.name }}</h1>
+                <p class="text-gray-500 mt-1">{{ category.name }}</p>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                        <i class="fas fa-boxes mr-1"></i>
+                        {{ items|length }} Items
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <i class="fas fa-calendar mr-1"></i>
+                        Last 30 Days
+                    </span>
+                </div>
+            </div>
+            
+            {% if can_enter_price %}
+            <a href="{% url 'enter_price_subcategory' category.id subcategory.id %}" 
+               class="inline-flex items-center px-5 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/25">
+                <i class="fas fa-plus mr-2"></i>
+                Enter Prices
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Legend - Only show for Admin/Business Head -->
+    {% if can_see_all_prices %}
+    <div class="flex flex-wrap items-center gap-4 text-sm bg-white rounded-xl p-4 border border-gray-100">
+        <span class="font-medium text-gray-700">Legend:</span>
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-green-200 border border-green-400"></div>
+            <span class="text-gray-600">Lowest Price</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
+            <span class="text-gray-600">Regular Price</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">F</span>
+            <span class="text-gray-600">Farmer</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700">B</span>
+            <span class="text-gray-600">Buyer</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <i class="fas fa-check-circle text-green-500"></i>
+            <span class="text-gray-600">Approved</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <i class="fas fa-check-circle text-gray-300"></i>
+            <span class="text-gray-600">Not Approved</span>
+        </div>
+    </div>
+    {% else %}
+    <!-- Legend for Farmers/Buyers -->
+    <div class="flex flex-wrap items-center gap-4 text-sm bg-white rounded-xl p-4 border border-gray-100">
+        <span class="font-medium text-gray-700">Legend:</span>
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                <i class="fas fa-check-circle"></i>
+                Approved
+            </span>
+            <span class="text-gray-600">Your price was approved</span>
+        </div>
+    </div>
+    </div>
+    {% endif %}
+    
+    <!-- Price Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="price-table w-full">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider bg-gray-50">
+                            Date
+                        </th>
+                        {% for item in items %}
+                        <th class="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <div class="flex flex-col">
+                                <span class="text-primary-700">{{ item.name }}</span>
+                                {% if item.code %}
+                                <span class="text-gray-400 font-normal normal-case text-xs">Code: {{ item.code }}</span>
+                                {% endif %}
+                                <span class="text-gray-400 font-normal normal-case text-xs">per {{ item.unit }}</span>
+                            </div>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for date in dates reversed %}
+                    <tr class="hover:bg-gray-50 transition-colors {% if date == today %}bg-yellow-50{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap {% if date == today %}bg-yellow-50{% else %}bg-white{% endif %}">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-900">
+                                    {{ date|date:"d M, Y" }}
+                                </span>
+                                {% if date == today %}
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-yellow-200 text-yellow-800">
+                                    Today
+                                </span>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs text-gray-500">{{ date|date:"l" }}</span>
+                        </td>
+                        {% for item in items %}
+                        <td class="px-4 py-4">
+                            {% if date in price_data and item.id in price_data|get_item:date %}
+                            <div class="space-y-2">
+                                {% for entry in price_data|get_item:date|get_item:item.id %}
+                                <div class="price-entry p-2 rounded-lg {% if entry.is_approved and not can_see_all_prices %}bg-green-50 border border-green-200{% elif entry.is_lowest and can_see_all_prices %}bg-green-100 border border-green-300{% else %}bg-gray-50 border border-gray-200{% endif %}" data-entry-id="{{ entry.id }}">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-lg font-bold {% if entry.is_lowest and can_see_all_prices %}text-green-700{% else %}text-gray-900{% endif %}">
+                                                ₹{{ entry.price }}
+                                            </span>
+                                            {% if entry.is_approved and not can_see_all_prices %}
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700" title="Approved by {{ entry.approved_by.get_full_name }}">
+                                                <i class="fas fa-check-circle"></i>
+                                                Approved
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            {% if entry.is_lowest and can_see_all_prices %}
+                                            <span class="lowest-badge px-2 py-0.5 rounded text-xs font-bold bg-green-500 text-white">
+                                                LOWEST
+                                            </span>
+                                            {% endif %}
+                                            {% if can_see_all_prices %}
+                                            <button type="button" 
+                                                    class="approve-btn p-1 rounded hover:bg-gray-100 transition-colors" 
+                                                    data-entry-id="{{ entry.id }}"
+                                                    data-approved="{{ entry.is_approved|yesno:'true,false' }}"
+                                                    title="{% if entry.is_approved %}Approved by {{ entry.approved_by.get_full_name }} - Click to disapprove{% else %}Click to approve{% endif %}">
+                                                <i class="fas fa-check-circle text-lg {% if entry.is_approved %}text-green-500{% else %}text-gray-300 hover:text-gray-400{% endif %}"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if can_see_all_prices %}
+                                    <div class="flex items-center gap-1 mt-2 flex-wrap">
+                                        <div class="w-5 h-5 rounded-full bg-gray-400 flex items-center justify-center flex-shrink-0">
+                                            <span class="text-xs text-white font-medium">
+                                                {{ entry.user.first_name|slice:":1"|upper }}
+                                            </span>
+                                        </div>
+                                        <span class="text-xs text-gray-600 font-medium" title="{{ entry.user.get_full_name }}">
+                                            {{ entry.user.first_name }} {{ entry.user.last_name }}
+                                        </span>
+                                        {% if entry.user.role == 'farmer' %}
+                                        <span class="px-1.5 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700 font-medium">F</span>
+                                        {% else %}
+                                        <span class="px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700 font-medium">B</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if entry.farmer %}
+                                    <div class="flex items-center gap-1 mt-1">
+                                        <i class="fas fa-store text-xs text-orange-500"></i>
+                                        <span class="text-xs text-orange-600 font-medium">{{ entry.farmer.name }}</span>
+                                        {% if entry.farmer.region %}
+                                        <span class="text-xs text-gray-400">• {{ entry.farmer.region.name }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                    {% endif %}
+                                    {% if entry.notes %}
+                                    <p class="text-xs text-gray-400 mt-1 truncate" title="{{ entry.notes }}">
+                                        {{ entry.notes }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <span class="text-gray-300 text-sm">-</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{{ items|length|add:1 }}" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-chart-bar text-gray-300 text-4xl mb-3"></i>
+                                <p class="text-gray-500">No price data available</p>
+                                {% if can_enter_price %}
+                                <a href="{% url 'enter_price' category.id %}" class="mt-3 text-primary-600 hover:text-primary-700 font-medium">
+                                    <i class="fas fa-plus mr-1"></i> Add your first price entry
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Info Card -->
+    {% if can_see_all_prices %}
+    <div class="bg-blue-50 rounded-2xl p-6 border border-blue-100">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-600"></i>
+            </div>
+            <div>
+                <h4 class="font-semibold text-blue-900">Price Comparison</h4>
+                <p class="text-blue-700 text-sm mt-1">
+                    Prices with <span class="font-bold text-green-600">green background</span> indicate the lowest available rate for that day and item.
+                    Contact the farmer or buyer directly to place an order.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-lock text-gray-500"></i>
+            </div>
+            <div>
+                <h4 class="font-semibold text-gray-900">Your Price Entries</h4>
+                <p class="text-gray-600 text-sm mt-1">
+                    You are viewing only your own price entries. Other farmers' and buyers' prices are kept private.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Highlight rows on hover
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f9fafb';
+            });
+            row.addEventListener('mouseleave', function() {
+                if (!this.classList.contains('bg-yellow-50')) {
+                    this.style.backgroundColor = '';
+                }
+            });
+        });
+        
+        // Approve button functionality
+        const approveButtons = document.querySelectorAll('.approve-btn');
+        approveButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const entryId = this.dataset.entryId;
+                const isApproved = this.dataset.approved === 'true';
+                const icon = this.querySelector('i');
+                
+                // Show loading state
+                icon.classList.remove('fa-check-circle');
+                icon.classList.add('fa-spinner', 'fa-spin');
+                
+                fetch('{% url "api_toggle_price_approval" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        price_entry_id: entryId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    icon.classList.remove('fa-spinner', 'fa-spin');
+                    icon.classList.add('fa-check-circle');
+                    
+                    if (data.success) {
+                        // Update button state
+                        this.dataset.approved = data.is_approved ? 'true' : 'false';
+                        
+                        if (data.is_approved) {
+                            icon.classList.remove('text-gray-300', 'hover:text-gray-400');
+                            icon.classList.add('text-green-500');
+                            this.title = 'Approved by ' + data.approved_by + ' - Click to disapprove';
+                        } else {
+                            icon.classList.remove('text-green-500');
+                            icon.classList.add('text-gray-300', 'hover:text-gray-400');
+                            this.title = 'Click to approve';
+                        }
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to update approval'));
+                    }
+                })
+                .catch(error => {
+                    icon.classList.remove('fa-spinner', 'fa-spin');
+                    icon.classList.add('fa-check-circle');
+                    console.error('Error:', error);
+                    alert('Failed to update approval status');
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

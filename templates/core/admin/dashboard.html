@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - Kannammal Agro{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-3xl font-bold text-gray-900">{{ stats.total_users }}</p>
+                    <p class="text-sm text-gray-500 mt-1">Total Users</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-3xl font-bold text-gray-900">{{ stats.farmers }}</p>
+                    <p class="text-sm text-gray-500 mt-1">Farmers</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+                    <i class="fas fa-tractor text-emerald-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-3xl font-bold text-gray-900">{{ stats.buyers }}</p>
+                    <p class="text-sm text-gray-500 mt-1">Buyers</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-cyan-100 flex items-center justify-center">
+                    <i class="fas fa-shopping-cart text-cyan-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-3xl font-bold text-gray-900">{{ stats.total_categories }}</p>
+                    <p class="text-sm text-gray-500 mt-1">Categories</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                    <i class="fas fa-th-large text-purple-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-3xl font-bold text-gray-900">{{ stats.total_items }}</p>
+                    <p class="text-sm text-gray-500 mt-1">Items</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
+                    <i class="fas fa-boxes text-indigo-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-3xl font-bold text-gray-900">{{ stats.today_entries }}</p>
+                    <p class="text-sm text-gray-500 mt-1">Today's Entries</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
+                    <i class="fas fa-rupee-sign text-orange-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{% url 'user_create' %}" class="card-hover bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 group">
+            <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+                <i class="fas fa-user-plus text-primary-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">Add New User</p>
+                <p class="text-sm text-gray-500">Create farmer or buyer</p>
+            </div>
+        </a>
+        
+        <a href="{% url 'category_create' %}" class="card-hover bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 group">
+            <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                <i class="fas fa-folder-plus text-purple-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">Add Category</p>
+                <p class="text-sm text-gray-500">New fruit or vegetable</p>
+            </div>
+        </a>
+        
+        <a href="{% url 'region_create' %}" class="card-hover bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 group">
+            <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                <i class="fas fa-map-marker-alt text-blue-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">Add Region</p>
+                <p class="text-sm text-gray-500">New location</p>
+            </div>
+        </a>
+        
+        <a href="{% url 'user_list' %}" class="card-hover bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center gap-4 group">
+            <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                <i class="fas fa-user-cog text-amber-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="font-semibold text-gray-900 group-hover:text-amber-600 transition-colors">Manage Permissions</p>
+                <p class="text-sm text-gray-500">User access control</p>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900">
+                <i class="fas fa-history mr-2 text-gray-400"></i>
+                Recent Activity
+            </h3>
+        </div>
+        
+        <div class="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+            {% for activity in recent_activities %}
+            <div class="px-6 py-4 hover:bg-gray-50 transition-colors">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                        {% if activity.action == 'login' %}bg-green-100
+                        {% elif activity.action == 'logout' %}bg-gray-100
+                        {% elif activity.action == 'price_add' %}bg-blue-100
+                        {% elif activity.action == 'price_update' %}bg-yellow-100
+                        {% elif activity.action == 'user_create' %}bg-purple-100
+                        {% else %}bg-gray-100{% endif %}">
+                        <i class="fas 
+                            {% if activity.action == 'login' %}fa-sign-in-alt text-green-600
+                            {% elif activity.action == 'logout' %}fa-sign-out-alt text-gray-600
+                            {% elif activity.action == 'price_add' %}fa-plus text-blue-600
+                            {% elif activity.action == 'price_update' %}fa-edit text-yellow-600
+                            {% elif activity.action == 'user_create' %}fa-user-plus text-purple-600
+                            {% elif activity.action == 'category_view' %}fa-eye text-cyan-600
+                            {% else %}fa-circle text-gray-600{% endif %}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm text-gray-900">
+                            <span class="font-medium">{{ activity.user.get_full_name }}</span>
+                            <span class="text-gray-500">{{ activity.get_action_display|lower }}</span>
+                        </p>
+                        {% if activity.description %}
+                        <p class="text-sm text-gray-500 truncate">{{ activity.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="text-xs text-gray-400 whitespace-nowrap">
+                        {{ activity.created_at|timesince }} ago
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="px-6 py-12 text-center">
+                <i class="fas fa-history text-gray-300 text-4xl mb-3"></i>
+                <p class="text-gray-500">No recent activity</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

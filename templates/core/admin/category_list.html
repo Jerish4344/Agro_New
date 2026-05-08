@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Categories - Admin - Kannammal Agro{% endblock %}
+{% block page_title %}Category Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">All Categories</h2>
+            <p class="text-gray-500 text-sm mt-1">Manage product categories and subcategories</p>
+        </div>
+        <a href="{% url 'category_create' %}" 
+           class="inline-flex items-center px-5 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/25">
+            <i class="fas fa-plus mr-2"></i>
+            Add Category
+        </a>
+    </div>
+    
+    <!-- Categories List -->
+    <div class="space-y-4">
+        {% for category in categories %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" x-data="{ expanded: false }">
+            <div class="p-6 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-xl flex items-center justify-center"
+                         style="background-color: {{ category.color }}20;">
+                        <span class="text-3xl">{{ category.icon }}</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 text-lg">{{ category.name }}</h3>
+                        <p class="text-sm text-gray-500">{{ category.subcategories.count }} subcategories</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    {% if category.is_active %}
+                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                    {% else %}
+                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Inactive</span>
+                    {% endif %}
+                    
+                    <a href="{% url 'subcategory_create' category.id %}" 
+                       class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                       title="Add Subcategory">
+                        <i class="fas fa-plus"></i>
+                    </a>
+                    <a href="{% url 'category_edit' category.id %}" 
+                       class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                       title="Edit Category">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <button @click="expanded = !expanded"
+                            class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i class="fas fa-chevron-down transition-transform" :class="{ 'rotate-180': expanded }"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Subcategories -->
+            <div x-show="expanded" x-collapse>
+                <div class="border-t border-gray-100 px-6 py-4 bg-gray-50">
+                    <h4 class="font-medium text-gray-700 mb-3">Subcategories</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {% for subcategory in category.subcategories.all %}
+                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                            <div>
+                                <p class="font-medium text-gray-900">{{ subcategory.name }}</p>
+                                <p class="text-sm text-gray-500">per {{ subcategory.unit }}</p>
+                            </div>
+                            <a href="{% url 'subcategory_edit' subcategory.id %}" 
+                               class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 col-span-full">No subcategories yet. 
+                            <a href="{% url 'subcategory_create' category.id %}" class="text-primary-600 hover:underline">Add one</a>
+                        </p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+            <i class="fas fa-folder-open text-gray-300 text-4xl mb-3"></i>
+            <p class="text-gray-500 mb-4">No categories created yet</p>
+            <a href="{% url 'category_create' %}" class="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors">
+                <i class="fas fa-plus mr-2"></i>
+                Create First Category
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

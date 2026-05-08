@@ -1,0 +1,6 @@
+asgiref
+Django
+django-jazzmin
+mysqlclient
+pillow
+sqlparse

@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login - Kannammal Agro{% endblock %}
+
+{% block public_content %}
+<div class="min-h-screen gradient-bg flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <!-- Logo and Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-28 h-28 rounded-full bg-white p-2 mb-4 shadow-xl">
+                <img src="{% static 'images/logo.png' %}" alt="Kannammal Agro" class="w-full h-full object-contain">
+            </div>
+            <h1 class="text-3xl font-bold text-white">Kannammal Agro</h1>
+            <p class="text-white/80 mt-1">Industries Pvt Ltd</p>
+            <p class="text-white/60 text-sm mt-2">Agricultural Price Tracking System</p>
+        </div>
+        
+        <!-- Login Card -->
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Welcome Back</h2>
+                <p class="text-gray-500 mt-1">Sign in to your account</p>
+            </div>
+            
+            {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                <div class="rounded-lg p-4 {% if message.tags == 'error' %}bg-red-50 text-red-800{% else %}bg-green-50 text-green-800{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="id_username" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-user mr-2 text-gray-400"></i>Username
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.username.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_password" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-lock mr-2 text-gray-400"></i>Password
+                    </label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.password.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                        <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                    </label>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Sign In
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">
+                    Don't have an account? 
+                    <span class="text-primary-600 font-medium">Contact your administrator</span>
+                </p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="text-center mt-8">
+            <p class="text-white/60 text-sm">
+                © 2024 Kannammal Agro Industries Pvt Ltd. All rights reserved.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

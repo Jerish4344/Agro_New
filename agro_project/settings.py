@@ -63,11 +63,11 @@ WSGI_APPLICATION = "agro_project.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'agro_db',
-        'USER': 'agro_user',
-        'PASSWORD': 'agricul',
-        'HOST': '192.168.2.77',
-        'PORT': '3306',
+        'NAME': 'db_name',
+        'USER': 'db_user',
+        'PASSWORD': 'db_pass',
+        'HOST': 'host',
+        'PORT': 'port',
     }
 }
 

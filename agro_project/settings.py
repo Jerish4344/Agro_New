@@ -123,8 +123,8 @@ FORCE_SCRIPT_NAME = "/agro"          # <-- Added for subdirectory hosting
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://jeyarama.com",
-    "https://www.jeyarama.com",
+    "",
+    "",
 ]
 
 CSRF_COOKIE_SECURE = True

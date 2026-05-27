@@ -10,12 +10,12 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "3q=ya=2k9rfm9*#@y_$(5$i^sb9vvc6#ma^88vi!80nx(2t)nv"
+SECRET_KEY = "your_secret_key"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'jeyarama.com', 'www.jeyarama.com', '192.168.2.76']
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
